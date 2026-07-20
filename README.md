@@ -1,7 +1,7 @@
 # WSL Doctor
 
-[![CI](https://github.com/rriordan/wsl-dev-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/rriordan/wsl-dev-doctor/actions/workflows/ci.yml)
-[![Latest release](https://img.shields.io/github/v/release/rriordan/wsl-dev-doctor?display_name=tag)](https://github.com/rriordan/wsl-dev-doctor/releases/latest)
+[![CI](https://github.com/rriordan/wsl-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/rriordan/wsl-doctor/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/rriordan/wsl-doctor?display_name=tag)](https://github.com/rriordan/wsl-doctor/releases/latest)
 
 A safe, read-only CLI that turns common WSL/Linux developer-environment failures into a concise Markdown or JSON diagnostic report.
 
@@ -38,8 +38,8 @@ next remediation steps without changing the environment.
 Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/rriordan/wsl-dev-doctor.git
-cd wsl-dev-doctor
+git clone https://github.com/rriordan/wsl-doctor.git
+cd wsl-doctor
 uv sync --all-groups
 uv run wsl-doctor --format markdown --output wsl-doctor-report.md
 ```
@@ -106,7 +106,7 @@ See [`examples/sample-report.md`](examples/sample-report.md).
 
 ## Release notes
 
-The first release, [`v0.1.0`](https://github.com/rriordan/wsl-dev-doctor/releases/tag/v0.1.0), is available now. Its full notes are in [`docs/releases/v0.1.0.md`](docs/releases/v0.1.0.md).
+The first release, [`v0.1.0`](https://github.com/rriordan/wsl-doctor/releases/tag/v0.1.0), is available now. Its full notes are in [`docs/releases/v0.1.0.md`](docs/releases/v0.1.0.md).
 
 ## How it works
 
