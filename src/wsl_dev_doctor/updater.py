@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass
@@ -8,6 +9,40 @@ from wsl_dev_doctor.inventory import ToolInventory
 from wsl_dev_doctor.registry import tool_by_id
 
 Run = Callable[[tuple[str, ...]], tuple[int, str, str]]
+
+
+@dataclass(frozen=True)
+class SourceUpdater:
+    source: str
+    command: tuple[str, ...]
+    scope: str
+
+
+_NPM_PACKAGES = {
+    "claude": "@anthropic-ai/claude-code",
+    "codex": "@openai/codex",
+}
+
+
+def _source_updater(tool_id: str, path: str | None) -> SourceUpdater | None:
+    """Return an updater only when a dedicated tool's source is recognizable."""
+    if path is None:
+        return None
+    normalized = os.path.realpath(path).replace("\\", "/")
+    npm_package = _NPM_PACKAGES.get(tool_id)
+    if npm_package is not None and "/node_modules/" in normalized:
+        return SourceUpdater(
+            "npm global package", ("npm", "update", "--global", npm_package), "global_js"
+        )
+    if tool_id == "claude" and "/.local/share/claude/versions/" in normalized:
+        return SourceUpdater("Claude standalone installer", ("claude", "update"), "dedicated")
+    if tool_id == "codex" and (
+        "/.codex/packages/standalone/" in normalized or "/.codex/releases/" in normalized
+    ):
+        return SourceUpdater("Codex standalone installer", ("codex", "update"), "dedicated")
+    if tool_id == "uv" and normalized.endswith("/.local/bin/uv"):
+        return SourceUpdater("uv standalone installer", ("uv", "self", "update"), "dedicated")
+    return None
 
 
 @dataclass(frozen=True)
@@ -45,25 +80,41 @@ def build_update_plan(
     for tool_id in dict.fromkeys(selected_ids):
         spec = tool_by_id(tool_id)
         discovered = by_id.get(tool_id)
+        source_updater: SourceUpdater | None = None
         if spec is None:
             plans.append(UpdatePlan(tool_id, (), "skipped", "Unknown registered tool."))
         elif discovered is None or discovered.status != "present":
             plans.append(UpdatePlan(tool_id, (), "skipped", "Tool is not present."))
         elif spec.update_command is None:
             plans.append(UpdatePlan(tool_id, (), "skipped", "No supported updater."))
-        elif not _eligible(spec.update_scope, include_system, include_global_js, include_homebrew):
+        elif (
+            spec.update_scope == "dedicated"
+            and (source_updater := _source_updater(tool_id, discovered.path)) is None
+        ):
             plans.append(
                 UpdatePlan(
                     tool_id,
-                    spec.update_command,
-                    "gated",
-                    f"Requires explicit opt-in for {spec.update_scope} updates.",
+                    (),
+                    "unsupported",
+                    "Installation source could not be determined; no update was planned.",
                 )
             )
         else:
-            plans.append(
-                UpdatePlan(tool_id, spec.update_command, "planned", "Safe dedicated updater.")
-            )
+            updater = source_updater if spec.update_scope == "dedicated" else None
+            command = updater.command if updater is not None else spec.update_command
+            scope = updater.scope if updater is not None else spec.update_scope
+            source = updater.source if updater is not None else "registered package-manager updater"
+            if not _eligible(scope, include_system, include_global_js, include_homebrew):
+                plans.append(
+                    UpdatePlan(
+                        tool_id,
+                        command,
+                        "gated",
+                        f"{source}; requires explicit opt-in for {scope} updates.",
+                    )
+                )
+            else:
+                plans.append(UpdatePlan(tool_id, command, "planned", f"Source: {source}."))
     return plans
 
 

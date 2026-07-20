@@ -83,10 +83,14 @@ uv run wsl-doctor preset save my-stack --tool claude --tool codex --tool uv
 uv run wsl-doctor update --preset my-stack
 ```
 
-Dedicated tool updaters are eligible by default. Broad package-manager updates
-remain gated and require an explicit flag: `--include-system-packages`,
-`--include-global-js-packages`, or `--include-homebrew`. For example, after
-reviewing the dry-run plan:
+Dedicated updaters are selected only after the tool's installation source is
+recognized. For example, a standalone Codex installation uses `codex update`,
+while an npm-installed Codex is routed to npm's global updater and remains
+gated. Unknown sources are reported as unsupported rather than guessed.
+
+Broad package-manager updates remain gated and require an explicit flag:
+`--include-system-packages`, `--include-global-js-packages`, or
+`--include-homebrew`. For example, after reviewing the dry-run plan:
 
 ```bash
 uv run wsl-doctor update --tool pnpm --include-global-js-packages --apply --yes
